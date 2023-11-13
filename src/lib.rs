@@ -3,8 +3,8 @@ pub enum FindPos { Start, End, }
 #[derive(Debug)]
 pub struct SearchOutput<'a>
 {
-	output: &'a str,
-	range: Range <usize>,
+	pub output: &'a str,
+	pub range: Range <usize>,
 }
 pub trait StringSearch
 {
