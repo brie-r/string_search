@@ -1,5 +1,5 @@
 ﻿use std::ops::Range;
-pub enum FindPos { Start, End, }
+pub enum Include { Include, Exclude }
 #[derive(Debug)]
 pub struct SearchOutput<'a>
 {
@@ -12,8 +12,8 @@ pub trait StringSearch
 	fn index_of_reverse ( &self, range: &Range<usize>, find: &str ) -> Option < Range <usize> >;
 	fn index_of_sequence ( &self, range: &Range<usize>, find: &Vec<&str> ) -> Option<Range<usize>>;
 	fn index_of_sequence_reverse ( &self, range: &Range<usize>, find: &Vec<&str> ) -> Option<Range<usize>>;
-	fn str_search (&self, range: &Range<usize>, start: &Vec<&str>, output_pos_start: FindPos, end: &Vec<&str>, output_pos_end: FindPos) -> Option<SearchOutput>;
-	fn str_search_reverse (&self, range: &Range<usize>, start: &Vec<&str>, output_pos_start: FindPos, end: &Vec<&str>, output_pos_end: FindPos) -> Option<SearchOutput>;
+	fn str_search (&self, range: &Range<usize>, start: &Vec<&str>, include_search_str_start: Include, end: &Vec<&str>, include_search_str_end: Include) -> Option<SearchOutput>;
+	fn str_search_reverse (&self, range: &Range<usize>, start: &Vec<&str>, include_search_str_start: Include, end: &Vec<&str>, include_search_str_start: Include) -> Option<SearchOutput>;
 }
 impl StringSearch for str
 {
@@ -81,7 +81,7 @@ impl StringSearch for str
 		}
 		output
 	}
-	fn str_search (&self, index_range: &Range<usize>, start_find: &Vec<&str>, output_pos_start: FindPos, end_find: &Vec<&str>, output_pos_end: FindPos) -> Option<SearchOutput>
+	fn str_search (&self, index_range: &Range<usize>, start_find: &Vec<&str>, output_pos_start: Include, end_find: &Vec<&str>, output_pos_end: Include) -> Option<SearchOutput>
 	{
 		let start = match self.index_of_sequence( index_range, start_find )
 		{
@@ -96,13 +96,13 @@ impl StringSearch for str
 
 		let start_index = match output_pos_start
 		{
-			FindPos::Start => start.start,
-			FindPos::End => start.end,
+			Include::Include => start.start,
+			Include::Exclude => start.end,
 		};
 		let end_index = match output_pos_end
 		{
-			FindPos::Start => end.start,
-			FindPos::End => end.end,
+			Include::Include => end.end,
+			Include::Exclude => end.start,
 		};
 		Some
 		(
@@ -113,40 +113,39 @@ impl StringSearch for str
 			}
 		)
 	}
-	fn str_search_reverse (&self, index_range: &Range<usize>, start_find: &Vec<&str>, output_pos_start: FindPos, end_find: &Vec<&str>, output_pos_end: FindPos) -> Option<SearchOutput>
+	fn str_search_reverse (&self, index_range: &Range<usize>, end_find: &Vec<&str>, output_pos_end: Include, start_find: &Vec<&str>, output_pos_start: Include) -> Option<SearchOutput>
 	{
-		let start = match self.index_of_sequence_reverse( index_range, start_find )
+		let end = match self.index_of_sequence_reverse( index_range, end_find )
 		{
 			Some ( indices_found ) => Some ( indices_found ),
 			None => return None,
 		}.unwrap(); // unwrap is safe because None returns early
-		let end = match self.index_of_sequence_reverse ( &( index_range.start .. start.start ), end_find)
+		let start = match self.index_of_sequence_reverse ( &( index_range.start .. end.start ), start_find)
 		{
 			Some ( indices_found ) => Some ( indices_found ),
 			None => return None,
 		}.unwrap(); // unwrap is safe because None returns early
 
-		let start_index = match output_pos_start
-		{
-			FindPos::Start => start.start,
-			FindPos::End => start.end,
-		};
 		let end_index = match output_pos_end
 		{
-			FindPos::Start => end.start,
-			FindPos::End => end.end,
+			Include::Include => end.end,
+			Include::Exclude => end.start,
+		};
+		let start_index = match output_pos_start
+		{
+			Include::Include => start.start,
+			Include::Exclude => start.end,
 		};
 		Some
 		(
 			SearchOutput
 			{
-				output: &self [ end_index .. start_index],
-				range: end_index .. start_index ,
+				output: &self [ start_index .. end_index],
+				range: start_index .. end_index ,
 			}
 		)
 	}
 }
-
 
 #[cfg(test)]
 mod tests
@@ -203,27 +202,43 @@ mod tests
 	fn test_str_search()
 	{
 		let text = "b3m4xins1ekp285q0tzdljv7gro9hcwfuay6b3m4xins1ekp285q0tzdljv7gro9hcwfuay6";
-		let result = text.str_search ( &( 0..text.len() ), &vec!["ins", "b3m4x"], FindPos::End, &vec!["q0t", "jv7"], FindPos::Start ).unwrap();
+		let result = text.str_search ( &( 0..text.len() ), &vec!["ins", "b3m4x"], Include::Exclude, &vec!["q0t", "jv7"], Include::Exclude ).unwrap();
 		let result_range = 41 .. 57;
 		assert_eq!(result.range, result_range);
 		assert_eq!(result.output, "ins1ekp285q0tzdl");
 	}
 	#[test]
+	fn test_str_search_include()
+	{
+		let text = "b3m4xins1ekp285q0tzdljv7gro9hcwfuay6b3m4xins1ekp285q0tzdljv7gro9hcwfuay6";
+		let result = text.str_search ( &( 0..text.len() ), &vec!["ins", "b3m4x"], Include::Include, &vec!["q0t", "jv7"], Include::Include ).unwrap();
+		let result_range = 36 .. 60;
+		assert_eq!(result.range, result_range);
+		assert_eq!(result.output, "b3m4xins1ekp285q0tzdljv7");
+	}
+	#[test]
 	fn test_str_search_reverse()
 	{
-		//panic!("help1");
-
 		let text = "b3m4xins1ekp285q0tzdljv7gro9hcwfuay6b3m4xins1ekp285q0tzdljv7gro9hcwfuay6";
-		let result = text.str_search_reverse ( &( 0..text.len() ), &vec!["jv7", "gro9"], FindPos::Start, &vec!["ekp2", "4xin"], FindPos::End ).unwrap();
+		let result = text.str_search_reverse ( &( 0..text.len() ), &vec!["jv7", "gro9"], Include::Exclude, &vec!["ekp2", "4xin"], Include::Exclude ).unwrap();
 		let result_range = 7 .. 24;
 		assert_eq!(result.range, result_range);
 		assert_eq!(result.output, "s1ekp285q0tzdljv7");
 	}
 	#[test]
+	fn test_str_search_reverse_include()
+	{
+		let text = "b3m4xins1ekp285q0tzdljv7gro9hcwfuay6b3m4xins1ekp285q0tzdljv7gro9hcwfuay6";
+		let result = text.str_search_reverse ( &( 0..text.len() ), &vec!["jv7", "gro9"], Include::Include, &vec!["ekp2", "4xin"], Include::Include ).unwrap();
+		let result_range = 3 .. 28;
+		assert_eq!(result.range, result_range);
+		assert_eq!(result.output, "4xins1ekp285q0tzdljv7gro9");
+	}
+	#[test]
 	fn test_none_str_search()
 	{
 		let text = "b3m4xins1ekp285q0tzdljv7gro9hcwfuay6b3m4xins1ekp285q0tzdljv7gro9hcwfuay6";
-		let result = text.str_search ( &( 0..text.len() ), &vec!["text not in string", "b3m4x"], FindPos::End, &vec!["q0t", "jv7"], FindPos::Start );
+		let result = text.str_search ( &( 0..text.len() ), &vec!["text not in string", "b3m4x"], Include::Exclude, &vec!["q0t", "jv7"], Include::Exclude );
 		assert!(result.is_none());
 	}
 }
