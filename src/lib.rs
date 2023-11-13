@@ -1,12 +1,12 @@
 ﻿use std::ops::Range;
-enum FindPos { Start, End, }
+pub enum FindPos { Start, End, }
 #[derive(Debug)]
-struct SearchOutput<'a>
+pub struct SearchOutput<'a>
 {
 	output: &'a str,
 	range: Range <usize>,
 }
-trait StringSearch
+pub trait StringSearch
 {
 	fn index_of ( &self, range: &Range<usize>, find: &str ) -> Option < Range <usize> >;
 	fn index_of_reverse ( &self, range: &Range<usize>, find: &str ) -> Option < Range <usize> >;
