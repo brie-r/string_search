@@ -2,6 +2,9 @@
 name = "string_search"
 version = "1.0.0"
 edition = "2021"
+license="MIT"
+description="A library for searching strings using substrings."
+repository="https://github.com/brie-r/string_search"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
