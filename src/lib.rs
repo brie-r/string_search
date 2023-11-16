@@ -10,6 +10,8 @@ pub trait StringSearch
 {
 	fn index_of ( &self, range: &Range<usize>, find: &str ) -> Option < Range <usize> >;
 	fn index_of_reverse ( &self, range: &Range<usize>, find: &str ) -> Option < Range <usize> >;
+	fn index_of_nth ( &self, range: &Range<usize>, find: &str, n: usize ) -> Option < Range <usize> >;
+	fn index_of_nth_reverse ( &self, range: &Range<usize>, find: &str, n: usize ) -> Option < Range <usize> >;
 	fn index_of_sequence ( &self, range: &Range<usize>, find: &Vec<&str> ) -> Option<Range<usize>>;
 	fn index_of_sequence_reverse ( &self, range: &Range<usize>, find: &Vec<&str> ) -> Option<Range<usize>>;
 	fn str_search (&self, range: &Range<usize>, start: &Vec<&str>, include_search_str_start: Include, end: &Vec<&str>, include_search_str_end: Include) -> Option<SearchOutput>;
@@ -45,6 +47,16 @@ impl StringSearch for str
 			None => None,
 		}
 	}
+	fn index_of_nth ( &self, index_range: &Range<usize>, find: &str, n: usize) -> Option <Range <usize> >
+	{
+		let repeat_vec = vec![find; n];
+		self.index_of_sequence (index_range, &repeat_vec)
+	}
+	fn index_of_nth_reverse ( &self, index_range: &Range<usize>, find: &str, n: usize) -> Option <Range <usize> >
+	{
+		let repeat_vec = vec![find; n];
+		self.index_of_sequence_reverse (index_range, &repeat_vec)
+	}
 	fn index_of_sequence( &self, index_range: &Range<usize>, find: &Vec<&str>) -> Option<Range <usize> >
 	{
 		let mut output: Option < Range <usize> > = None;
@@ -55,7 +67,7 @@ impl StringSearch for str
 			{
 				Some (indices_found) =>
 				{
-					start = indices_found.start;
+					start = indices_found.end;
 					Some ( indices_found )
 				},
 				None => return None,
@@ -166,6 +178,22 @@ mod tests
 		let text = "b3m4xins1ekp285q0tzdljv7gro9hcwfuay6b3m4xins1ekp285q0tzdljv7gro9hcwfuay6";
 		let result = text.index_of_reverse( &( 0..text.len() ), "ins");
 		let result_range = Some (41..44);
+		assert_eq!(result, result_range);
+	}
+	#[test]
+	fn test_index_of_nth()
+	{
+		let text = "b3m4xins1ekp285q0tzdljv7gro9hcwfuay6b3m4xins1ekp285q0tzdljv7gro9hcwfuay6";
+		let result = text.index_of_nth( &( 0..text.len() ), "p285q", 2);
+		let result_range = Some (47..52);
+		assert_eq!(result, result_range);
+	}
+	#[test]
+	fn test_index_of_nth_reverse()
+	{
+		let text = "b3m4xins1ekp285q0tzdljv7gro9hcwfuay6b3m4xins1ekp285q0tzdljv7gro9hcwfuay6";
+		let result = text.index_of_nth_reverse( &( 0..text.len() ), "p285q", 2);
+		let result_range = Some (11..16);
 		assert_eq!(result, result_range);
 	}
 	#[test]
